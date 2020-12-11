@@ -1,0 +1,8 @@
+opencv-python
+numpy
+scipy
+pandas
+tifffile
+tqdm
+h5py
+torch
