@@ -10,7 +10,7 @@ def evaluate_model(model, dev_dl, criterion, args, output_dir=None):
     metric = get_metric(args.criterion)
 
     with torch.no_grad():
-        for i, batch in enumerate(dev_dl):
+        for batch in dev_dl:
             input, label = map(lambda x: x.to(args.device), batch)
 
             logits = model(input)
@@ -20,7 +20,7 @@ def evaluate_model(model, dev_dl, criterion, args, output_dir=None):
             metric = update_metric(args.criterion, metric, metric_value)
 
             if output_dir:
-                write_img_batch(logits, output_dir, i, labels=label)
+                write_img_batch(logits, output_dir, 0, labels=label)
 
     return metric
 

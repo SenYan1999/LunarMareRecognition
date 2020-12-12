@@ -23,6 +23,7 @@ except:
 ### TODO: Different Model
 ### TODO: Different Data Transform
 ### TODO: Log to File
+### TODO: FIX NUM_WORKERS 1 FOR DEV DL
 
 def prepare_data():
     # # write raw data
@@ -78,10 +79,11 @@ def train_and_evaluate():
     print('- done.')
 
     train_sampler = torch.utils.data.distributed.DistributedSampler(train_data) if args.distributed else None
+    dev_sampler = torch.utils.data.distributed.DistributedSampler(dev_data) if args.distributed else None
     train_dl = torch.utils.data.DataLoader(train_data, batch_size=args.batch_size, num_workers=args.num_workers,
                                            pin_memory=True, sampler=train_sampler)
     dev_dl = torch.utils.data.DataLoader(dev_data, batch_size=args.batch_size, num_workers=args.num_workers,
-                                         pin_memory=True)
+                                         pin_memory=True, sampler=dev_sampler)
 
     # define model
     model = UNet(n_channels=1, n_classes=args.num_classes, bilinear=False).to(args.device)
@@ -112,10 +114,12 @@ def train_and_evaluate():
         scheduler.step(loss)
 
         # update min_loss
+        is_min = min_loss > loss
         min_loss = min(min_loss, loss)
 
         print('Min Loss: %.2f' % min_loss)
-
+        if is_min:
+            torch.save({'state_dict': model.state_dict(), 'min_loss': min_loss}, args.save_model)
 
 def main():
     if args.prepare_data:
