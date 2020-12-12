@@ -6,4 +6,5 @@ tifffile
 tqdm
 h5py
 torch
+torchvision
 comet_ml

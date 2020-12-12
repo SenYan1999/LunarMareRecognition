@@ -1,12 +1,13 @@
 import os
 import h5py
+import random
 import torch
 import torch.nn as nn
 import numpy as np
 import tifffile as tiff
 
 from glob import glob
-from tqdm import trange
+from tqdm import trange, tqdm
 
 def prepare_data(data_dir, out_file):
     input_dir, label_dir = os.path.join(data_dir, 'input'), os.path.join(data_dir, 'label')
@@ -33,14 +34,34 @@ def prepare_data(data_dir, out_file):
     h5.create_dataset('label', data=label_data)
     h5.close()
 
+def split_dataset(h5, train_num, dev_num):
+    train_input, train_label = [], []
+    dev_input, dev_label = [], []
+
+    train_idx = random.sample(range(train_num + dev_num), train_num)
+    dev_idx = list(filter(lambda x: x not in train_idx, range(train_num + dev_num)))
+
+    for i in tqdm(train_idx):
+        train_input.append(np.array(h5['input'][i]).astype(np.uint8))
+        train_label.append(np.array(h5['label'][i]).astype(np.uint8))
+    for i in tqdm(dev_idx):
+        dev_input.append(np.array(h5['input'][i]).astype(np.uint8))
+        dev_label.append(np.array(h5['label'][i]).astype(np.uint8))
+
+    return (train_input, train_label), (dev_input, dev_label)
+
 class LunarDataset(nn.Module):
-    def __init__(self, h5_file):
+    def __init__(self, h5_file, transform=None):
         super().__init__()
-        self.h5 = h5py.File(h5_file)
+        self.h5 = h5py.File(h5_file, 'r')
+        self.transform = transform
 
     def __getitem__(self, i):
         input = torch.FloatTensor(self.h5['input'][i])
         label = torch.LongTensor(self.h5['label'][i])
+        if self.transform:
+            input = self.transform(input)
+
         return (input, label)
 
     def __len__(self):

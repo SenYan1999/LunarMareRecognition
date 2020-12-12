@@ -4,9 +4,9 @@ from tqdm import tqdm
 try:
     from apex import amp
 except:
-    print('Apex not installed in this environment')
+    pass
 
-def train_epoch(model, data_dl, optimizer, epoch, criterion, experiment, args):
+def train_epoch(model, data_dl, optimizer, epoch, criterion, args):
     model.train()
     metric = get_metric(args.criterion)
 
@@ -20,7 +20,7 @@ def train_epoch(model, data_dl, optimizer, epoch, criterion, experiment, args):
             # update parameters
             optimizer.zero_grad()
             if args.fp16:
-                with amp.scaled_loss(loss, optimizer) as scaled_loss:
+                with amp.scale_loss(loss, optimizer) as scaled_loss:
                     scaled_loss.backward()
             else:
                 loss.backward()
@@ -28,6 +28,7 @@ def train_epoch(model, data_dl, optimizer, epoch, criterion, experiment, args):
 
             # update log
             metric = update_metric(args.criterion, metric, metric_value)
-            update_pbar(pbar, args.criterion, epoch, metric_value)
+            if args.local_rank == 0:
+                update_pbar(pbar, args.criterion, epoch, metric_value)
 
     return metric

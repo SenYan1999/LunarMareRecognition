@@ -40,7 +40,7 @@ def write_img_batch(logits, out_dir, idx_begin, labels=None):
         pred_img = convert_logit_to_img_sigmoid(logits[i])
         tiff.imwrite(os.path.join(out_dir, '%s_pred.tif' % str(i+idx_begin)), pred_img)
 
-        if labels != None:
+        if type(labels) != type(None):
             label = labels[i].squeeze().detach().cpu().numpy().astype(np.uint8)
             label[np.where(label >= 0.5)] = 255
             tiff.imwrite(os.path.join(out_dir, '%s_truth.tif' % str(i+idx_begin)), label)
