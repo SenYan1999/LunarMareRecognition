@@ -11,7 +11,7 @@ pip install -r requirements.txt
 1. Fetch the data from BaiduNetDisk(to be continued)
 2. Train model
     ``` shell script
-    python main.py
+    python main.py --train
     ```
 
 ## Results

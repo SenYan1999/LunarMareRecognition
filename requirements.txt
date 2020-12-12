@@ -6,3 +6,4 @@ tifffile
 tqdm
 h5py
 torch
+comet_ml
