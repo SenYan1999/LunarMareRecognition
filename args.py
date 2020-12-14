@@ -26,8 +26,8 @@ parser.add_argument('--num_workers', type=int, default=4)
 parser.add_argument('--num_classes', type=int, default=1)
 
 # training parameters
-parser.add_argument('--epochs', type=int, default=100)
-parser.add_argument('--lr', type=float, default=0.001)
+parser.add_argument('--epochs', type=int, default=50)
+parser.add_argument('--lr', type=float, default=0.05)
 parser.add_argument('--weight_decay', type=float, default=1e-8)
 parser.add_argument('--momentum', type=float, default=0.9)
 parser.add_argument('--criterion', type=str, default='bce_dice_weight_loss')

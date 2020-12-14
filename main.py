@@ -1,4 +1,4 @@
-import torch
+from comet_ml import OfflineExperiment
 import torchvision
 import h5py
 import utils
@@ -23,7 +23,7 @@ except:
 ### TODO: Different Model
 ### TODO: Different Data Transform
 ### TODO: Log to File
-### TODO: FIX NUM_WORKERS 1 FOR DEV DL
+### TODO: FIX NUM_WORKERS 1 FOR DEV_DL DUE TO H5PY
 
 def prepare_data():
     # # write raw data
@@ -60,10 +60,11 @@ def prepare_data():
     torch.save({'mean': torch.FloatTensor([mean]).reshape(-1), 'std': torch.FloatTensor([std]).reshape(-1)},
                args.data_normalize_info)
 
-def train_and_evaluate():
+def train_and_evaluate(experiment):
     # prepare distributed train
     if args.distributed:
         assert args.fp16 # we only allow distributed training using apex
+        # dist.init_process_group(backend=args.backend, init_method='tcp://127.0.0.1:4318', rank=args.local_rank, world_size=2)
         dist.init_process_group(backend=args.backend)
         torch.cuda.set_device(args.local_rank)
         print(f'Now local rank is {args.local_rank}')
@@ -102,12 +103,16 @@ def train_and_evaluate():
 
     min_loss = 1e8
     for epoch in range(args.epochs):
-        train_metric = utils.train_epoch(model, train_dl, optimizer, epoch, criterion, args)
+        with experiment.train():
+            train_metric, train_metric_general = utils.train_epoch(model, train_dl, optimizer, epoch, criterion, experiment, args)
         output_dir = None if epoch % 20 != 0 else args.pred_img_out_dir
-        dev_metric = utils.evaluate_model(model, dev_dl, criterion, args, output_dir=output_dir)
+        dev_metric, dev_metric_general = utils.evaluate_model(model, dev_dl, criterion, args, output_dir=output_dir)
 
-        utils.print_metric(args.criterion, train_metric, epoch, mode='Train')
-        utils.print_metric(args.criterion, dev_metric, epoch, mode='Test')
+        with experiment.test():
+            utils.update_dev_experiment(experiment, args.criterion, dev_metric, dev_metric_general, epoch)
+
+        utils.print_metric(args.criterion, train_metric, train_metric_general, epoch, mode='Train')
+        utils.print_metric(args.criterion, dev_metric, dev_metric_general, epoch, mode='Test')
 
         # adjust learning rate
         loss = utils.get_loss_from_metric(args.criterion, dev_metric)
@@ -117,7 +122,8 @@ def train_and_evaluate():
         is_min = min_loss > loss
         min_loss = min(min_loss, loss)
 
-        print('Min Loss: %.2f' % min_loss)
+        if args.local_rank == 0:
+            print('Min Loss: %.2f' % min_loss)
         if is_min:
             torch.save({'state_dict': model.state_dict(), 'min_loss': min_loss}, args.save_model)
 
@@ -126,7 +132,23 @@ def main():
         prepare_data()
 
     if args.train:
-        train_and_evaluate()
+        if args.local_rank == 0:
+            experiment = OfflineExperiment(
+                api_key="vmCRwu7hHUSAp05U6DDME06pR",
+                project_name="lunarmarerecognization",
+                workspace="senyan1999",
+                offline_directory='comet_experiment',
+            )
+            experiment.add_tag('UNet')
+            experiment.log_parameters({
+                'model': 'UNet',
+                'lr': args.lr,
+                'criterion': args.criterion
+            })
+        else:
+            experiment = OfflineExperiment(offline_directory='comet_experiment', disabled=True)
+
+        train_and_evaluate(experiment)
 
 if __name__ == '__main__':
     main()

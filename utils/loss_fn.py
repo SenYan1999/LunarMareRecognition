@@ -17,7 +17,7 @@ def bce_dice_weight_loss(pred, target, bce_weight=0.5):
     pred = torch.sigmoid(pred)
     dice = dice_loss(pred, target)
 
-    loss = bce * bce_weight + dice * (1 - bce_weight)
+    loss = (bce * bce_weight + dice * (1 - bce_weight)) * 10
 
     bce = bce.data.cpu().numpy()
     dice = dice.data.cpu().numpy()
