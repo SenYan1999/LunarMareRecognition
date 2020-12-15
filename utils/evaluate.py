@@ -1,19 +1,20 @@
 import torch
 import os
-import numpy as np
 import tifffile as tiff
 
 from .log import *
 from .metric import Evaluator
+from tqdm import tqdm
 
 def evaluate_model(model, dev_dl, criterion, args, output_dir=None):
-    model.train()
+    model.eval()
     general_metric = get_metric('general')
     metric = get_metric(args.criterion)
 
     evaluator = Evaluator(2)
+    idx_begin = 0
     with torch.no_grad():
-        for batch in dev_dl:
+        for batch in tqdm(dev_dl, total=len(dev_dl)):
             input, label = map(lambda x: x.to(args.device), batch)
 
             logits = model(input)
@@ -25,9 +26,8 @@ def evaluate_model(model, dev_dl, criterion, args, output_dir=None):
             general_metric = update_metric('general', general_metric, general_metric_value)
 
             if output_dir:
-                write_img_batch(logits, output_dir, 0, labels=label)
-
-            break
+                write_img_batch(logits, output_dir, idx_begin, labels=label)
+                idx_begin += input.shape[0]
 
     return metric, general_metric
 

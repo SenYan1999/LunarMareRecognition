@@ -11,6 +11,7 @@ parser.add_argument('--fp16', action='store_true')
 # train mode
 parser.add_argument('--prepare_data', action='store_true')
 parser.add_argument('--train', action='store_true')
+parser.add_argument('--evaluate', action='store_true')
 
 # data prepare and dataset
 parser.add_argument('--raw_data_dir', type=str, default='data/all_segments')

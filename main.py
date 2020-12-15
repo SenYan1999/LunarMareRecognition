@@ -127,6 +127,35 @@ def train_and_evaluate(experiment):
         if is_min:
             torch.save({'state_dict': model.state_dict(), 'min_loss': min_loss}, args.save_model)
 
+def evaluate():
+    # firstly we need to load the model
+    pretrained_model = args.save_model
+    checkpoint = torch.load(pretrained_model, map_location=lambda storage, loc: storage.cuda(args.local_rank))
+
+    # define model
+    args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = UNet(n_channels=1, n_classes=args.num_classes, bilinear=False).to(args.device)
+    try:
+        model.load_state_dict(checkpoint['state_dict'])
+    except:
+        model = torch.nn.DataParallel(model)
+        model.load_state_dict(checkpoint['state_dict'])
+
+    # prepare dev dataloader
+    print('Loading the datasets...')
+    normalize_info = torch.load(args.data_normalize_info)
+    transform = torchvision.transforms.Normalize(normalize_info['mean'], normalize_info['std'])
+    dev_data = utils.LunarDataset(args.dev_data, transform=transform)
+    dev_dl = torch.utils.data.DataLoader(dev_data, batch_size=args.batch_size, num_workers=args.num_workers,
+                                         pin_memory=True, sampler=None)
+    print('- done.')
+    print('total dev samples: %d' % len(dev_data))
+
+    # evaluate
+    criterion = globals()[args.criterion]
+    metric, general_metric = utils.evaluate_model(model, dev_dl, criterion, args, output_dir=args.pred_img_out_dir)
+    utils.print_metric(args.criterion, metric, general_metric, 0, 'Dev')
+
 def main():
     if args.prepare_data:
         prepare_data()
@@ -149,6 +178,9 @@ def main():
             experiment = OfflineExperiment(offline_directory='comet_experiment', disabled=True)
 
         train_and_evaluate(experiment)
+
+    if args.evaluate:
+        evaluate()
 
 if __name__ == '__main__':
     main()

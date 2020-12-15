@@ -39,6 +39,4 @@ def train_epoch(model, data_dl, optimizer, epoch, criterion, experiment, args):
                 update_pbar(pbar, args.criterion, epoch, metric_value, general_metric_value)
                 update_train_experiment(experiment, args.criterion, metric_value, general_metric_value, step)
 
-            break
-
     return metric, general_metric
