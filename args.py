@@ -29,12 +29,14 @@ parser.add_argument('--num_classes', type=int, default=1)
 # training parameters
 parser.add_argument('--epochs', type=int, default=50)
 parser.add_argument('--lr', type=float, default=0.05)
-parser.add_argument('--weight_decay', type=float, default=1e-8)
+parser.add_argument('--weight_decay', type=float, default=1e-4)
 parser.add_argument('--momentum', type=float, default=0.9)
 parser.add_argument('--criterion', type=str, default='bce_dice_weight_loss')
 
 # evaluate detail
 parser.add_argument('--pred_img_out_dir', type=str, default='output/img_pred')
+parser.add_argument('--output_threshold', type=float, default=0.5)
+parser.add_argument('--analysis_pe', type=str, default='sgd.json')
 
 # log details
 parser.add_argument('--save_model', type=str, default='output/models/model.pt')

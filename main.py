@@ -19,6 +19,8 @@ except:
     print('Apex not installed in this environment')
 
 ### TODO: Data Augmentation
+### TODO: Remove High Latitute
+### TODO: Different Optimizer
 ### TODO: Different Loss Func
 ### TODO: Different Model
 ### TODO: Different Data Transform
@@ -90,7 +92,9 @@ def train_and_evaluate(experiment):
     model = UNet(n_channels=1, n_classes=args.num_classes, bilinear=False).to(args.device)
 
     # define optimizer and scheduler
-    optimizer = torch.optim.RMSprop(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
+    # optimizer = torch.optim.RMSprop(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
+    # optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min' if args.num_classes > 1 else 'max', patience=2)
 
     if args.fp16:
