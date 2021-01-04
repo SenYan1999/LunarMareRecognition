@@ -4,3 +4,4 @@ from .evaluate import evaluate_model
 from .log import *
 from .loss_fn import *
 from .metric import *
+from .augmentation import *

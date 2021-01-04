@@ -51,16 +51,22 @@ def split_dataset(h5, train_num, dev_num):
     return (train_input, train_label), (dev_input, dev_label)
 
 class LunarDataset(nn.Module):
-    def __init__(self, h5_file, transform=None):
+    def __init__(self, h5_file, transform=None, augmentation=None):
         super().__init__()
         self.h5 = h5py.File(h5_file, 'r')
         self.transform = transform
+        self.augmentation = augmentation
 
     def __getitem__(self, i):
-        input = torch.FloatTensor(self.h5['input'][i])
-        label = torch.LongTensor(self.h5['label'][i])
+        input = self.h5['input'][i]
+        label = self.h5['label'][i]
+
         if self.transform:
-            input = self.transform(input)
+            input = self.transform(torch.FloatTensor(input))
+        if self.augmentation != None:
+            input = self.augmentation(images=input.numpy())
+
+        input, label = torch.FloatTensor(input), torch.LongTensor(label)
 
         return (input, label)
 

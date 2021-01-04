@@ -1,8 +1,10 @@
 from comet_ml import OfflineExperiment
+
 import torchvision
 import h5py
 import utils
-
+import sys
+import os
 import torch.distributed as dist
 
 from tqdm import tqdm
@@ -17,6 +19,11 @@ try:
     import apex
 except:
     print('Apex not installed in this environment')
+
+
+log_file = os.path.join('log/log_SGD_common_augmentation.log')
+log_f = open(log_file, 'w', encoding='utf-8')
+sys.stdout = log_f
 
 ### TODO: Data Augmentation
 ### TODO: Remove High Latitute
@@ -78,7 +85,7 @@ def train_and_evaluate(experiment):
     print('Loading the datasets...')
     normalize_info = torch.load(args.data_normalize_info)
     transform = torchvision.transforms.Normalize(normalize_info['mean'], normalize_info['std'])
-    train_data, dev_data = utils.LunarDataset(args.train_data, transform=transform), utils.LunarDataset(args.dev_data, transform=transform)
+    train_data, dev_data = utils.LunarDataset(args.train_data, transform=transform, augmentation=utils.common_seq), utils.LunarDataset(args.dev_data, transform=transform)
     print('- done.')
 
     train_sampler = torch.utils.data.distributed.DistributedSampler(train_data) if args.distributed else None
@@ -93,12 +100,12 @@ def train_and_evaluate(experiment):
 
     # define optimizer and scheduler
     # optimizer = torch.optim.RMSprop(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
-    # optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
+    # optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min' if args.num_classes > 1 else 'max', patience=2)
 
     if args.fp16:
-        model, optimizer = amp.initialize(model, optimizer, opt_level='O0')
+        model, optimizer = amp.initialize(model, optimizer, opt_level='O1')
         if args.distributed:
             model = DDP(model)
 
